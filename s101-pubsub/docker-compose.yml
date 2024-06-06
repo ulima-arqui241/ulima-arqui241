@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: bitnami/zookeeper
+    ports:
+      - 2181:2181
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+
+  kafka:
+    image: bitnami/kafka
+    ports:
+      - 9092:9092
+    environment:
+      - KAFKA_ADVERTISED_HOST_NAME=kafka
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+    depends_on:
+      - zookeeper
+
+  ecommerce-app:
+    build:
+      context: ./ecommerce-app
+      dockerfile: Dockerfile
+    ports:
+      - 3000:3000
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_TOPIC: "new_orders"
+
+  shipping-app:
+    build:
+      context: ./shipping-app
+      dockerfile: Dockerfile
+    ports:
+      - 3001:3001      
+    depends_on:
+      - kafka
+    environment:
+      - KAFKA_HOST=kafka:9092      
+
+  dwh-app:
+    build:
+      context: ./dwh-app
+      dockerfile: Dockerfile
+    ports:
+      - 3002:3002
+    depends_on:
+      - kafka
+    environment:
+      - KAFKA_HOST=kafka:9092
+
